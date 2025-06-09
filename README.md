@@ -11,6 +11,8 @@ openssl genrsa -in src/certs/private_key.pem -outform PEM -pubout -out src/certs
 ```
 Edit .env file
 <br/>
+Create database "faceai"
+<br/>
 Run app
 ```shell
 uvicorn src.main:app
