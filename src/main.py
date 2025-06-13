@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.database.database import Database
 import uvicorn
 from src.schemas.schemas import User, BadResponse, GoodResponse, UserLoginResponse, AccessLogsResponse, LogResponse, \
-    UsersResponse
+    UsersResponse, AddUserRequest, GetUserResponse, SetUserPasswordRequest, SetUserAccessLayerRequest
 from src.utils import utils, auth
 from dotenv import load_dotenv
 import os
@@ -90,6 +90,74 @@ def users(page: int, page_size: int = 10, access_token: dict = Depends(user_auth
             return BadResponse(4)
     else:
         return BadResponse(3)
+
+@app.post("/users")
+def add_user(user: AddUserRequest, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            res = database.add_user(user.login, user.password, user.accessLayerId)
+            return GoodResponse(100) if res else BadResponse(5)
+        else:
+            return BadResponse(4)
+    else:
+        return BadResponse(3)
+
+@app.get("/user")
+def get_user(id: int, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            user_db = database.get_user_by_id(id)
+            if user_db is not None:
+                return GetUserResponse(id=id, login=user_db.login, accessLayer=user_db.access_layer_id)
+            return BadResponse(1)
+        else:
+            return BadResponse(4)
+    else:
+        return BadResponse(3)
+
+@app.delete("/user")
+def delete_user(id: int, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            if database.delete_user(id):
+                return GoodResponse(101)
+            else:
+                return BadResponse(1)
+        else:
+            return BadResponse(4)
+    else:
+        return BadResponse(3)
+
+@app.post("/user")
+def set_user_password(user: SetUserPasswordRequest, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            if database.set_user_password(user.id, user.password):
+                return GoodResponse(102)
+            else: return BadResponse(1)
+        else:
+            return BadResponse(4)
+    else:
+        return BadResponse(3)
+
+@app.put("/user")
+def change_user_access_layer(user: SetUserAccessLayerRequest, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            if database.set_user_access(user.id, user.accessLayerId):
+                return GoodResponse(102)
+            else:
+                return BadResponse(1)
+        else:
+            return BadResponse(4)
+    else:
+        return BadResponse(3)
+
 
 def check_access(access_token: dict):
     if access_token is not None:

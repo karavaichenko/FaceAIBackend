@@ -71,6 +71,36 @@ class Database:
         user = res.scalar()
         return user
 
+    def get_user_by_id(self, user_id):
+        res = self.session.execute(select(UserModel).where(UserModel.id == user_id))
+        user = res.scalar()
+        return user
+
+    def delete_user(self, user_id):
+        user = self.get_user_by_id(user_id)
+        if user is not None:
+            self.session.execute(delete(UserModel).where(UserModel.id == user_id))
+            self.session.commit()
+            return True
+        else: return False
+
+    def set_user_password(self, user_id, new_password):
+        user = self.get_user_by_id(user_id)
+        if user is None:
+            return False
+        user.password = new_password
+        self.session.commit()
+        return True
+
+    def set_user_access(self, user_id, access_layer_id):
+        user = self.get_user_by_id(user_id)
+        if user is None: return False
+        user.access_layer_id = access_layer_id
+        self.session.commit()
+        return True
+
+
+
     def get_access_logs(self, page: int, page_size: int = 10):
         stmt = select(AccessLogModel).order_by(desc(AccessLogModel.timestamp)).offset((page - 1) * page_size).limit(page_size)
         res = self.session.execute(stmt)
@@ -82,7 +112,8 @@ class Database:
         return self.session.execute(stmt).scalar()
 
     def get_users(self, page: int, page_size: int = 10):
-        stmt = select(UserModel).offset((page - 1) * page_size).limit(page_size)
+        stmt = (select(UserModel).order_by(desc(-UserModel.id))
+                .offset((page - 1) * page_size).limit(page_size))
         res = self.session.execute(stmt)
         users = res.scalars().all()
         return users
@@ -90,3 +121,16 @@ class Database:
     def get_users_size(self):
         stmt = select(func.count()).select_from(UserModel)
         return self.session.execute(stmt).scalar()
+
+    def add_user(self, login, password, access_layer_id):
+        res = self.session.execute(select(AccessLayerModel).where(AccessLayerModel.id == access_layer_id))
+        access_layer = res.scalar()
+        if self.get_user(login) is None and access_layer is not None:
+            res = self.session.execute(select(UserModel.id).order_by(UserModel.id.desc()))
+            user_id = res.scalar()
+            user = UserModel(id=(user_id+1), login=login, password=password, access_layer_id=access_layer_id)
+            self.add(user)
+            return True
+        else:
+            return False
+

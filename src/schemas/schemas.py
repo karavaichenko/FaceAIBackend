@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+# Auth models
 class User(BaseModel):
     login: str
     password: str
@@ -9,6 +10,7 @@ class UserLoginResponse(BaseModel):
     accessLayerId: int
     resultCode: int
 
+# Logs Models
 class LogResponse(BaseModel):
     id: int
     name: str
@@ -20,6 +22,7 @@ class AccessLogsResponse(BaseModel):
     count: int
     resultCode: int = 0
 
+# Users Models
 class UserResponse(BaseModel):
     id: int
     login: str
@@ -30,12 +33,33 @@ class UsersResponse(BaseModel):
     count: int
     resultCode: int = 0
 
+class AddUserRequest(BaseModel):
+    login: str
+    password: str
+    accessLayerId: int
+
+class GetUserResponse(BaseModel):
+    id: int
+    login: str
+    accessLayer: int
+    resultCode: int = 0
+
+class SetUserPasswordRequest(BaseModel):
+    id: int
+    password: str
+
+class SetUserAccessLayerRequest(BaseModel):
+    id: int
+    accessLayerId: int
 
 class GoodResponse(BaseModel):
 
     """
     Хорошие ответы сервера
     1000 - authorization success
+    100 - object added
+    101 - object deleted
+    102 - object changed
     """
 
     resultCode: int = 0
@@ -53,6 +77,7 @@ class BadResponse(BaseModel):
     2 - invalid password
     3 - access and refresh tokens expired
     4 - access denied
+    5 - invalid request
     """
 
     resultCode: int = 1
