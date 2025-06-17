@@ -3,7 +3,9 @@ from sqlalchemy import Integer, String, DateTime
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped
-from src.schemas.schemas import LogResponse, UserResponse
+from starlette.responses import FileResponse
+
+from src.schemas.schemas import LogResponse, UserResponse, Employee
 
 
 class AbstractModel(DeclarativeBase):
@@ -17,7 +19,11 @@ class EmployeeModel(AbstractModel):
     photo_url: Mapped[str] = mapped_column(String, nullable=True)
     is_access: Mapped[bool] = mapped_column()
 
-    access_logs: Mapped[list["AccessLogModel"]] = relationship(back_populates="employee")
+    access_logs: Mapped[list["AccessLogModel"]] = relationship(back_populates="employee", lazy=False)
+
+    def to_schema(self):
+        return Employee(id=self.id, name=self.name, info=self.info,
+                        isAccess=self.is_access)
 
 class AccessLogModel(AbstractModel):
     __tablename__ = "access_logs"
@@ -26,7 +32,7 @@ class AccessLogModel(AbstractModel):
     timestamp: Mapped[datetime] = mapped_column()
     is_known: Mapped[bool] = mapped_column()
 
-    employee: Mapped["EmployeeModel"] = relationship(back_populates="access_logs")
+    employee: Mapped["EmployeeModel"] = relationship(back_populates="access_logs", lazy=False)
 
     def to_schema(self):
         return LogResponse(id=self.id, name=self.employee.name, access=self.is_known, time=str(self.timestamp))

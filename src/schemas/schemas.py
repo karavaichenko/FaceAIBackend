@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from starlette.responses import FileResponse
+
 
 # Auth models
 class User(BaseModel):
@@ -52,6 +54,36 @@ class SetUserAccessLayerRequest(BaseModel):
     id: int
     accessLayerId: int
 
+# Employees models
+class Employee(BaseModel):
+    id: int
+    name: str
+    info: str
+    isAccess: bool
+
+class EmployeeResponse(BaseModel):
+    id: int
+    name: str
+    info: str
+    isAccess: bool
+    resultCode: int = 0
+
+class EmployeesResponse(BaseModel):
+    employees: list[Employee]
+    count: int
+    resultCode: int = 0
+
+class EmployeePostRequest(BaseModel):
+    name: str
+    info: str = '-'
+    isAccess: bool
+
+class EmployeePostResponse(BaseModel):
+    id: int
+    resultCode: int = 100
+
+
+# Results models
 class GoodResponse(BaseModel):
 
     """
