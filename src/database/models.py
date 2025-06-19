@@ -31,6 +31,7 @@ class AccessLogModel(AbstractModel):
     employee_id: Mapped[int] = mapped_column(ForeignKey('employees.id'))
     timestamp: Mapped[datetime] = mapped_column()
     is_known: Mapped[bool] = mapped_column()
+    photo_url: Mapped[str] = mapped_column()
 
     employee: Mapped["EmployeeModel"] = relationship(back_populates="access_logs", lazy=False)
 

@@ -3,3 +3,5 @@ src/certs/*
 .idea
 .env
 __pycache__/
+static/accessLogs
+static/employees

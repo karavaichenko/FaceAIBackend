@@ -19,6 +19,13 @@ class LogResponse(BaseModel):
     access: bool
     time: str
 
+class AccessLogResponse(BaseModel):
+    id: int
+    name: str
+    access: bool
+    time: str
+    resultCode: int = 0
+
 class AccessLogsResponse(BaseModel):
     logs: list[LogResponse]
     count: int

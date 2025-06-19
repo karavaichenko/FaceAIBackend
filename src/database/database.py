@@ -39,9 +39,11 @@ class Database:
                 self.add(session, known_employee)
             res = session.execute(select(AccessLogModel.id))
             if res.first() is None:
-                some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10", is_known=False)
+                some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10",
+                                           is_known=False, photo_url="0")
                 self.add(session, some_logs)
-                some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10", is_known=True)
+                some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10",
+                                           is_known=True, photo_url="1")
                 self.add(session, some_logs)
 
     def add(self,session, obj):
@@ -112,6 +114,12 @@ class Database:
             logs = list(map(lambda x: x.to_schema(), logs))
             return logs
 
+    def get_access_log(self, id):
+        with self.Session() as session:
+            res = session.execute(select(AccessLogModel).where(AccessLogModel.id == id))
+            access_log = res.scalar()
+            return access_log
+
     def get_access_log_size(self):
         with self.Session() as session:
             stmt = select(func.count()).select_from(AccessLogModel)
@@ -143,13 +151,21 @@ class Database:
             else:
                 return False
 
-    def get_employees(self, page, page_size):
+    def get_employees(self, page, page_size, substr):
         with self.Session() as session:
             try:
-                stmt = (select(EmployeeModel).order_by(desc(EmployeeModel.name))
-                        .offset((page - 1) * page_size).limit(page_size))
-                res = session.execute(stmt)
-                employees = res.scalars().unique()
+                if substr is not None and substr != '':
+                    substr = f"%{substr}%"
+                    stmt = (select(EmployeeModel).where(EmployeeModel.name.ilike(substr))
+                            .order_by(desc(EmployeeModel.name))
+                            .offset((page - 1) * page_size).limit(page_size))
+                    res = session.execute(stmt)
+                    employees = res.scalars().unique()
+                else:
+                    stmt = (select(EmployeeModel).order_by(desc(EmployeeModel.name))
+                            .offset((page - 1) * page_size).limit(page_size))
+                    res = session.execute(stmt)
+                    employees = res.scalars().unique()
                 employees = list(map(lambda x: x.to_schema(), employees))
                 return employees
             except:
@@ -199,3 +215,18 @@ class Database:
                 return True
             else:
                 return False
+
+    def set_employee_data(self, employee_id, name, info, is_access):
+        with self.Session() as session:
+            employee = self.get_employee(employee_id)
+            if employee is None: return False
+            res = session.execute(select(EmployeeModel.id).where(EmployeeModel.name == name))
+            employee_name = res.scalar()
+            if employee_name is not None and employee_name != employee_id: return False
+            employee.name = name
+            info = "-" if not info else info
+            employee.info = info
+            employee.is_access = is_access
+            self.add(session, employee)
+            return True
+
