@@ -12,7 +12,8 @@ from src.database.database import Database
 import uvicorn
 from src.schemas.schemas import User, BadResponse, GoodResponse, UserLoginResponse, AccessLogsResponse, LogResponse, \
     UsersResponse, AddUserRequest, GetUserResponse, SetUserPasswordRequest, SetUserAccessLayerRequest, \
-    EmployeesResponse, EmployeePostRequest, EmployeePostResponse, EmployeeResponse, Employee, AccessLogResponse
+    EmployeesResponse, EmployeePostRequest, EmployeePostResponse, EmployeeResponse, Employee, AccessLogResponse, \
+    PostAccessLogRequest
 from src.utils import utils, auth
 from dotenv import load_dotenv
 import os
@@ -108,6 +109,20 @@ def get_access_log_photo(id: int, access_token: dict = Depends(user_auth.check_a
         else:
             response = FileResponse(DEFAULT_IMAGE)
         return response
+    else:
+        return BadResponse(3)
+
+@app.post("/accessLog")
+def post_access_log(access_log: PostAccessLogRequest, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            if database.add_access_log(access_log.employee_id, access_log.time, access_log.access):
+                return GoodResponse(100)
+            else:
+                return BadResponse(1)
+        else:
+            return BadResponse(4)
     else:
         return BadResponse(3)
 
