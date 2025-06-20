@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, relationship
-from sqlalchemy import Integer, String, DateTime
+from sqlalchemy import Integer, String, DateTime, ARRAY, Numeric
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped
@@ -19,11 +19,20 @@ class EmployeeModel(AbstractModel):
     photo_url: Mapped[str] = mapped_column(String, nullable=True)
     is_access: Mapped[bool] = mapped_column()
 
+    encoding: Mapped["EmployeeEncodingsModel"] = relationship(back_populates="employee", lazy=False)
     access_logs: Mapped[list["AccessLogModel"]] = relationship(back_populates="employee", lazy=False)
 
     def to_schema(self):
         return Employee(id=self.id, name=self.name, info=self.info,
                         isAccess=self.is_access)
+
+class EmployeeEncodingsModel(AbstractModel):
+    __tablename__ = 'employee_encodings'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey('employees.id'), unique=True)
+    encoding: Mapped[list[str]] = mapped_column(ARRAY(Numeric))
+
+    employee: Mapped["EmployeeModel"] = relationship(back_populates="encoding", lazy=False)
 
 class AccessLogModel(AbstractModel):
     __tablename__ = "access_logs"
