@@ -30,13 +30,12 @@ class AccessLogModel(AbstractModel):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey('employees.id'))
     timestamp: Mapped[datetime] = mapped_column()
-    is_known: Mapped[bool] = mapped_column()
     photo_url: Mapped[str] = mapped_column(String, nullable=True)
 
     employee: Mapped["EmployeeModel"] = relationship(back_populates="access_logs", lazy=False)
 
     def to_schema(self):
-        return LogResponse(id=self.id, name=self.employee.name, access=self.is_known, time=str(self.timestamp))
+        return LogResponse(id=self.id, name=self.employee.name, access=self.employee.is_access, time=str(self.timestamp))
 
 class AccessLayerModel(AbstractModel):
     __tablename__ = "access_layers"

@@ -34,7 +34,6 @@ class AccessLogsResponse(BaseModel):
 class PostAccessLogRequest(BaseModel):
     employee_id: int
     time: str
-    access: bool
 
 # Users Models
 class UserResponse(BaseModel):

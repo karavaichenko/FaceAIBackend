@@ -39,11 +39,9 @@ class Database:
                 self.add(session, known_employee)
             res = session.execute(select(AccessLogModel.id))
             if res.first() is None:
-                some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10",
-                                           is_known=False, photo_url="0")
+                some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10", photo_url="0")
                 self.add(session, some_logs)
-                some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10",
-                                           is_known=True, photo_url="1")
+                some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10", photo_url="1")
                 self.add(session, some_logs)
 
     def add(self, session, obj):
@@ -140,14 +138,14 @@ class Database:
             stmt = select(func.count()).select_from(AccessLogModel)
             return session.execute(stmt).scalar()
 
-    def add_access_log(self, employee_id, timestamp, is_access):
+    def add_access_log(self, employee_id, timestamp):
         with self.Session() as session:
             employee = self.get_employee(employee_id)
             if employee is None: return False
             res = session.execute(select(AccessLogModel.id).order_by(AccessLogModel.id.desc()))
             log_id = res.scalar()
             log_id = log_id + 1 if log_id is not None else 0
-            access_log = AccessLogModel(id=log_id, employee_id=employee_id, timestamp=timestamp, is_known=is_access)
+            access_log = AccessLogModel(id=log_id, employee_id=employee_id, timestamp=timestamp)
             self.add(session, access_log)
             return True
 

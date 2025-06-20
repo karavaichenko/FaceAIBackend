@@ -92,7 +92,7 @@ def get_access_log(id: int, access_token: dict = Depends(user_auth.check_access_
         access_log = database.get_access_log(id)
         if access_log is None: return BadResponse(1)
         return AccessLogResponse(id=access_log.id, name=access_log.employee.name,
-                                 access=access_log.is_known, time=str(access_log.timestamp))
+                                 access=access_log.employee.is_access, time=str(access_log.timestamp))
     else:
         return BadResponse(3)
 
@@ -117,7 +117,7 @@ def post_access_log(access_log: PostAccessLogRequest, access_token: dict = Depen
     user_access_layer = check_access(access_token)
     if user_access_layer is not None:
         if user_access_layer == 0:
-            if database.add_access_log(access_log.employee_id, access_log.time, access_log.access):
+            if database.add_access_log(access_log.employee_id, access_log.time):
                 return GoodResponse(100)
             else:
                 return BadResponse(1)
