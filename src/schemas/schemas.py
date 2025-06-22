@@ -31,9 +31,8 @@ class AccessLogsResponse(BaseModel):
     count: int
     resultCode: int = 0
 
-class PostAccessLogRequest(BaseModel):
-    employee_id: int
-    time: str
+class PostAccessLogNotify(BaseModel):
+    isAccess: bool
 
 # Users Models
 class UserResponse(BaseModel):

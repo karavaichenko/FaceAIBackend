@@ -1,19 +1,20 @@
 from http.client import responses
 from pydantic import BaseModel
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, WebSocket
 from fastapi.params import Depends
 from pydantic.v1 import ValidationError
 from starlette.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from src.utils.utils import init_dirs
+from src.utils.websockets import WebSocketManager
 
 from src.database.database import Database
 import uvicorn
-from src.schemas.schemas import User, BadResponse, GoodResponse, UserLoginResponse, AccessLogsResponse, LogResponse, \
+from src.schemas.schemas import User, BadResponse, GoodResponse, UserLoginResponse, AccessLogsResponse, \
     UsersResponse, AddUserRequest, GetUserResponse, SetUserPasswordRequest, SetUserAccessLayerRequest, \
     EmployeesResponse, EmployeePostRequest, EmployeePostResponse, EmployeeResponse, Employee, AccessLogResponse, \
-    PostAccessLogRequest
+    PostAccessLogNotify
 from src.utils import utils, auth
 from dotenv import load_dotenv
 import os
@@ -29,9 +30,12 @@ DEFAULT_IMAGE = ROOT_DIR / 'static/default.svg'
 if 'MY_PATH' in os.environ:
     path = os.environ["MY_PATH"]
 
+DB_ROOT_PASSWORD = os.getenv('ROOT_PASSWORD')
+DB_ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 URL = os.getenv('DB_URL')
-database = Database(URL)
+database = Database(URL, DB_ROOT_PASSWORD, DB_ADMIN_PASSWORD)
 user_auth = auth.UserAuth("./src/certs/private_key.pem", "./src/certs/public_key.pem")
+websocket_manager = WebSocketManager()
 
 @app.post("/auth/login")
 def login(user: User):
@@ -80,7 +84,6 @@ def logout():
 def access_logs(page: int, page_size: int = 10, access_token: dict = Depends(user_auth.check_access_jwt)):
     if check_access(access_token) is not None:
         logs = database.get_access_logs(page)
-        # logs = map(lambda x: x.to_schema(), logs)
         count = database.get_access_log_size()
         return AccessLogsResponse(logs=list(logs), count=count)
     else:
@@ -113,14 +116,29 @@ def get_access_log_photo(id: int, access_token: dict = Depends(user_auth.check_a
         return BadResponse(3)
 
 @app.post("/accessLog")
-def post_access_log(access_log: PostAccessLogRequest, access_token: dict = Depends(user_auth.check_access_jwt)):
+async def post_access_log(notify: PostAccessLogNotify, access_token: dict = Depends(user_auth.check_access_jwt)):
     user_access_layer = check_access(access_token)
     if user_access_layer is not None:
         if user_access_layer == 0:
-            if database.add_access_log(access_log.employee_id, access_log.time):
-                return GoodResponse(100)
-            else:
-                return BadResponse(1)
+            data = notify.isAccess
+            await websocket_manager.broadcast(f"{data}")
+            return GoodResponse(0)
+        else:
+            return BadResponse(4)
+    else:
+        return BadResponse(3)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, access_token: dict = Depends(user_auth.check_access_jwt)):
+    user_access_layer = check_access(access_token)
+    if user_access_layer is not None:
+        if user_access_layer == 0:
+            await websocket_manager.connect(websocket)
+            try:
+                while True:
+                    await websocket.receive_text()
+            except:
+                websocket_manager.disconnect(websocket)
         else:
             return BadResponse(4)
     else:
