@@ -1,13 +1,9 @@
 from sqlalchemy import create_engine, select, func, delete, desc, select, update
 from sqlalchemy.orm import registry, Session, sessionmaker, joinedload
+from src.utils.utils import hash_password
 
 from src.database.models import AbstractModel, UserModel, EmployeeModel, AccessLogModel, AccessLayerModel, \
     EmployeeEncodingsModel
-
-
-def hash_password(password: str):
-    return password
-
 
 
 class Database:
@@ -32,22 +28,22 @@ class Database:
                 self.add(session, user_access_layer)
             res = session.execute(select(UserModel.id))
             if res.first() is None:
-                root_user = UserModel(id=0, login='root', password=root_password, access_layer_id=0)
-                admin = UserModel(id=1, login='admin', password=admin_password, access_layer_id=0)
+                root_user = UserModel(id=0, login='root', password=hash_password(root_password), access_layer_id=0)
+                admin = UserModel(id=1, login='admin', password=hash_password(admin_password), access_layer_id=0)
                 self.add(session, admin)
                 self.add(session, root_user)
             res = session.execute(select(EmployeeModel.id))
             if res.first() is None:
                 unknown_employee = EmployeeModel(id=0, name="-", info="-", photo_url="/", is_access=False)
                 self.add(session, unknown_employee)
-                known_employee = EmployeeModel(id=1, name="Каравайченко Иван", info="шеф", photo_url="/", is_access=True)
-                self.add(session, known_employee)
-            res = session.execute(select(AccessLogModel.id))
-            if res.first() is None:
-                some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10", photo_url="0")
-                self.add(session, some_logs)
-                some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10", photo_url="1")
-                self.add(session, some_logs)
+                # known_employee = EmployeeModel(id=1, name="Каравайченко Иван", info="шеф", photo_url="/", is_access=True)
+                # self.add(session, known_employee)
+            # res = session.execute(select(AccessLogModel.id))
+            # if res.first() is None:
+            #     some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10", photo_url="0")
+            #     self.add(session, some_logs)
+            #     some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10", photo_url="1")
+            #     self.add(session, some_logs)
 
     def add(self, session, obj):
         session.add(obj)
@@ -62,10 +58,8 @@ class Database:
             if self.get_user(login) is None and access_layer is not None:
                 res = session.execute(select(UserModel.id).order_by(UserModel.id.desc()))
                 user_id = res.scalar()
-                if user_id:
-                    user = UserModel(id=(user_id+1), login=login, password=password, access_layer_id=access_layer_id)
-                else:
-                    user = UserModel(id=0, login=login, password=password, access_layer_id=access_layer_id)
+                user_id = user_id + 1 if user_id is not None else 0
+                user = UserModel(id=user_id, login=login, password=hash_password(password), access_layer_id=access_layer_id)
                 self.add(session, user)
                 return True
             else:
@@ -110,7 +104,7 @@ class Database:
             user = self.get_user_by_id(user_id)
             if user is None:
                 return False
-            user.password = new_password
+            user.password = hash_password(new_password)
             session.commit()
             return True
 
@@ -119,7 +113,7 @@ class Database:
             user = self.get_user_by_id(user_id)
             if user is None: return False
             user.access_layer_id = access_layer_id
-            session.commit()
+            self.add(session, user)
             return True
 
     # AccessLogs
