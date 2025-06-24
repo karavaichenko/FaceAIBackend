@@ -1,9 +1,6 @@
 from datetime import timedelta, datetime
-
 import jwt
-
 from fastapi import Cookie
-
 
 class UserAuth:
 
