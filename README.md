@@ -1,4 +1,4 @@
-## Quik start
+## Quick start
 ```shell
 pip install requirements.txt
 ```
