@@ -121,6 +121,7 @@ async def post_access_log(notify: PostAccessLogNotify, access_token: dict = Depe
     if user_access_layer is not None:
         if user_access_layer == 0:
             data = notify.isAccess
+            data = 1 if data else 0
             await websocket_manager.broadcast(f"{data}")
             return GoodResponse(0)
         else:

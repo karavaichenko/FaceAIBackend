@@ -36,14 +36,6 @@ class Database:
             if res.first() is None:
                 unknown_employee = EmployeeModel(id=0, name="-", info="-", photo_url="/", is_access=False)
                 self.add(session, unknown_employee)
-                # known_employee = EmployeeModel(id=1, name="Каравайченко Иван", info="шеф", photo_url="/", is_access=True)
-                # self.add(session, known_employee)
-            # res = session.execute(select(AccessLogModel.id))
-            # if res.first() is None:
-            #     some_logs = AccessLogModel(id=0, employee_id=0, timestamp="12-12-2024 12:25:10", photo_url="0")
-            #     self.add(session, some_logs)
-            #     some_logs = AccessLogModel(id=1, employee_id=1, timestamp="12-12-2024 12:24:10", photo_url="1")
-            #     self.add(session, some_logs)
 
     def add(self, session, obj):
         session.add(obj)

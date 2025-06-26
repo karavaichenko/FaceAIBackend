@@ -15,4 +15,5 @@ class WebSocketManager:
 
     async def broadcast(self, message: str):
         for connection in self.active_connections:
+            print("Send notify")
             await connection.send_text(message)
