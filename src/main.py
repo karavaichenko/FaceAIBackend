@@ -19,23 +19,26 @@ from src.utils import utils, auth
 from dotenv import load_dotenv
 import os
 
-
 load_dotenv()
 app = FastAPI()
 init_dirs()
-path = 'localhost'
+HOST = os.getenv('HOST')
+PORT = os.getenv('PORT')
+FRONTEND_HOST = os.getenv('FRONTEND_HOST')
+FRONTEND_WEBSOCKET = os.getenv('FRONTEND_WEBSOCKET')
+USE_HTTPS = os.getenv("USE_HTTPS", "false").lower() == "true"
+websocket_manager = WebSocketManager()
+
 ROOT_DIR = Path(os.getenv('ROOT_DIR'))
 IMAGES_DIR = ROOT_DIR / "static"
 DEFAULT_IMAGE = ROOT_DIR / 'static/default.svg'
-if 'MY_PATH' in os.environ:
-    path = os.environ["MY_PATH"]
 
 DB_ROOT_PASSWORD = os.getenv('ROOT_PASSWORD')
 DB_ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 URL = os.getenv('DB_URL')
 database = Database(URL, DB_ROOT_PASSWORD, DB_ADMIN_PASSWORD)
 user_auth = auth.UserAuth("./src/certs/private_key.pem", "./src/certs/public_key.pem")
-websocket_manager = WebSocketManager()
+
 
 @app.post("/auth/login")
 def login(user: User):
@@ -348,14 +351,26 @@ def add_cookie(content, refresh, access):
     if isinstance(content, BaseModel):
         content = dict(content)
     response = JSONResponse(content=content)
-    response.set_cookie(key="access_token", value=access)
-    response.set_cookie(key="refresh_token", value=refresh)
+    response.set_cookie(key="access_token",
+                        value=access,
+                        samesite="none",  # Важно для разных портов!
+                        secure=True,  # True если HTTPS
+                        domain=None)
+    response.set_cookie(key="refresh_token",
+                        value=refresh,
+                        samesite="none",
+                        secure=True,
+                        domain=None)
     return response
 
 
 origins = [
-    "http://localhost",
-    "http://localhost:5173"
+    'https://localhost:5173',
+    'wss://localhost:5173',
+    'http://localhost:5173',
+    'ws://localhost:5173',
+    FRONTEND_HOST,
+    FRONTEND_WEBSOCKET
 ]
 
 app.add_middleware(
@@ -367,4 +382,12 @@ app.add_middleware(
 )
 
 if __name__ == "__main__":
-    uvicorn.run("main:app")
+    if USE_HTTPS:
+        ssl_keyfile = ROOT_DIR / "src/certs/key.pem"
+        ssl_cert = ROOT_DIR / "src/certs/cert.pem"
+        uvicorn.run("main:app",
+                    host=HOST, port=int(PORT),
+                    ssl_keyfile=ssl_keyfile,
+                    ssl_certfile=ssl_cert)
+    else:
+        uvicorn.run("main:app", host=HOST, port=int(PORT))
